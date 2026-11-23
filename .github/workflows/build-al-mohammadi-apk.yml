@@ -5,7 +5,6 @@ on:
   push:
     paths:
       - "AL-MOHAMMADI-EST-Android-iOS-Source.zip"
-      - ".github/workflows/build-al-mohammadi-apk.yml"
 
 permissions:
   contents: read
@@ -30,8 +29,14 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Install Android SDK platform
-        uses: android-actions/setup-android@v3
+      - name: Verify runner Android SDK
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          test -d "$ANDROID_HOME"
+          ls "$ANDROID_HOME"
+          if [ -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
+            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null
+          fi
 
       - name: Extract AL-MOHAMMADI EST source
         run: |
