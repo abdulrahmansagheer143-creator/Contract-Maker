@@ -4,8 +4,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - "Contract-Maker-Android-Project-With-Icon.zip"
-      - ".github/workflows/build-al-mohammadi-apk.yml"
+      - "AL-MOHAMMADI-EST-Complete-App.zip"
       - ".github/workflows/build-al-mohammadi-apk.yml"
 
 permissions:
@@ -26,7 +25,7 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Check Android SDK on runner
+      - name: Check and install Android SDK components
         run: |
           echo "ANDROID_HOME=$ANDROID_HOME"
           test -d "$ANDROID_HOME"
@@ -35,17 +34,16 @@ jobs:
           yes | "$SDKMANAGER" --licenses >/dev/null || true
           "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0" "platform-tools"
 
-      - name: Extract existing Android project
+      - name: Extract complete app source
         run: |
-          test -f Contract-Maker-Android-Project-With-Icon.zip
-          mkdir -p app-source
-          unzip -q Contract-Maker-Android-Project-With-Icon.zip -d app-source
-          test -f app-source/Contract-Maker-Android/settings.gradle
-          test -f app-source/Contract-Maker-Android/app/build.gradle
-
-      - name: Apply AL-MOHAMMADI EST app branding
-        run: |
-          sed -i 's/android:label="Contract Maker"/android:label="AL-MOHAMMADI EST"/' app-source/Contract-Maker-Android/app/src/main/AndroidManifest.xml
+          test -f AL-MOHAMMADI-EST-Complete-App.zip
+          mkdir -p source
+          unzip -q AL-MOHAMMADI-EST-Complete-App.zip -d source
+          test -f source/android/settings.gradle
+          test -f source/android/app/build.gradle
+          test -f source/android/app/src/main/assets/web/index.html
+          test -f source/android/app/src/main/assets/web/invoice.html
+          test -f source/android/app/src/main/java/com/almohammadi/est/MainActivity.java
 
       - name: Setup Gradle 8.9
         uses: gradle/actions/setup-gradle@v4
@@ -53,13 +51,13 @@ jobs:
           gradle-version: "8.9"
 
       - name: Build debug APK
-        working-directory: app-source/Contract-Maker-Android
+        working-directory: source/android
         run: gradle assembleDebug --no-daemon
 
-      - name: Upload APK
+      - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: AL-MOHAMMADI-EST-Android-Preview-APK
-          path: app-source/Contract-Maker-Android/app/build/outputs/apk/debug/app-debug.apk
+          name: AL-MOHAMMADI-EST-APK
+          path: source/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
