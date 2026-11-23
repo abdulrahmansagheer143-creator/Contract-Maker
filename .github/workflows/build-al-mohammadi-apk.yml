@@ -4,74 +4,60 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - "AL-MOHAMMADI-EST-Android-iOS-Source.zip"
+      - "Contract-Maker-Android-Project-With-Icon.zip"
+      - ".github/workflows/build-al-mohammadi-apk.yml"
 
 permissions:
   contents: read
 
 jobs:
   android-preview:
-    name: Build installable Android preview APK
+    name: Build installable AL-MOHAMMADI EST APK
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22.16.0"
-
-      - name: Setup Java
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
 
-      - name: Verify runner Android SDK
+      - name: Check Android SDK on runner
         run: |
           echo "ANDROID_HOME=$ANDROID_HOME"
           test -d "$ANDROID_HOME"
-          ls "$ANDROID_HOME"
-          if [ -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
-            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null
-          fi
+          command -v sdkmanager
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-35" "build-tools;35.0.0" "platform-tools"
 
-      - name: Extract AL-MOHAMMADI EST source
+      - name: Extract existing Android project
         run: |
-          test -f AL-MOHAMMADI-EST-Android-iOS-Source.zip
+          test -f Contract-Maker-Android-Project-With-Icon.zip
           mkdir -p app-source
-          unzip -q AL-MOHAMMADI-EST-Android-iOS-Source.zip -d app-source
-          test -f app-source/app.json
-          test -f app-source/App.js
+          unzip -q Contract-Maker-Android-Project-With-Icon.zip -d app-source
+          test -f app-source/Contract-Maker-Android/settings.gradle
+          test -f app-source/Contract-Maker-Android/app/build.gradle
 
-      - name: Install JavaScript dependencies
-        working-directory: app-source
-        run: npm install --no-audit --no-fund
+      - name: Apply AL-MOHAMMADI EST app branding
+        run: |
+          sed -i 's/android:label="Contract Maker"/android:label="AL-MOHAMMADI EST"/' app-source/Contract-Maker-Android/app/src/main/AndroidManifest.xml
 
-      - name: Align Expo SDK dependencies
-        working-directory: app-source
-        run: npx expo install --fix
-
-      - name: Validate Expo project
-        working-directory: app-source
-        run: npx expo-doctor
-
-      - name: Generate Android native project
-        working-directory: app-source
-        run: npx expo prebuild --platform android --no-install --non-interactive
+      - name: Setup Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
 
       - name: Build debug APK
-        working-directory: app-source/android
-        run: |
-          chmod +x ./gradlew
-          ./gradlew assembleDebug --no-daemon
+        working-directory: app-source/Contract-Maker-Android
+        run: gradle assembleDebug --no-daemon
 
-      - name: Upload APK artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: AL-MOHAMMADI-EST-Android-Preview-APK
-          path: app-source/android/app/build/outputs/apk/debug/app-debug.apk
+          path: app-source/Contract-Maker-Android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
