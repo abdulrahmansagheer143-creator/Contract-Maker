@@ -1,0 +1,72 @@
+name: Build AL-MOHAMMADI EST Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "AL-MOHAMMADI-EST-Android-iOS-Source.zip"
+      - ".github/workflows/build-al-mohammadi-apk.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  android-preview:
+    name: Build installable Android preview APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.16.0"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install Android SDK platform
+        uses: android-actions/setup-android@v3
+
+      - name: Extract AL-MOHAMMADI EST source
+        run: |
+          test -f AL-MOHAMMADI-EST-Android-iOS-Source.zip
+          mkdir -p app-source
+          unzip -q AL-MOHAMMADI-EST-Android-iOS-Source.zip -d app-source
+          test -f app-source/app.json
+          test -f app-source/App.js
+
+      - name: Install JavaScript dependencies
+        working-directory: app-source
+        run: npm install --no-audit --no-fund
+
+      - name: Align Expo SDK dependencies
+        working-directory: app-source
+        run: npx expo install --fix
+
+      - name: Validate Expo project
+        working-directory: app-source
+        run: npx expo-doctor
+
+      - name: Generate Android native project
+        working-directory: app-source
+        run: npx expo prebuild --platform android --no-install --non-interactive
+
+      - name: Build debug APK
+        working-directory: app-source/android
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AL-MOHAMMADI-EST-Android-Preview-APK
+          path: app-source/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
