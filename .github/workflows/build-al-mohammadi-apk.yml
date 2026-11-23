@@ -40,9 +40,14 @@ jobs:
           unzip -q AL-MOHAMMADI-EST-Complete-App.zip -d source
           test -f source/android/settings.gradle
           test -f source/android/app/build.gradle
-          test -f source/android/app/src/main/assets/web/index.html
-          test -f source/android/app/src/main/assets/web/invoice.html
+          test -f source/web/index.html
+          test -f source/web/invoice.html
           test -f source/android/app/src/main/java/com/almohammadi/est/MainActivity.java
+
+      - name: Copy shared web app into Android assets
+        run: |
+          mkdir -p source/android/app/src/main/assets/web
+          cp -R source/web/. source/android/app/src/main/assets/web/
 
       - name: Setup Gradle 8.9
         uses: gradle/actions/setup-gradle@v4
