@@ -6,6 +6,7 @@ on:
     paths:
       - "Contract-Maker-Android-Project-With-Icon.zip"
       - ".github/workflows/build-al-mohammadi-apk.yml"
+      - ".github/workflows/build-al-mohammadi-apk.yml"
 
 permissions:
   contents: read
